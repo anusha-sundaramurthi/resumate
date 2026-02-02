@@ -1,12 +1,12 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { getResume } from '@/lib/redis';
-import { optimizeResume } from '@/lib/ai';  // ← Using Google Gemini
+import { getResume } from '@/lib/mongodb';  
+import { optimizeResume } from '@/lib/ai';
 import { prepareOptimizationInstructions } from '@/constants';
 
 export async function POST(request: Request) {
   try {
-    const { userId } = await auth();
+    const { userId } =  auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -17,11 +17,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Resume ID required' }, { status: 400 });
     }
 
+    console.log('Fetching resume data from MongoDB...');
+
     // Get resume data
     const resumeData = await getResume(userId, resumeId);
     if (!resumeData) {
       return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
     }
+
+    console.log('Resume found:', resumeData.companyName, resumeData.jobTitle);
 
     // Validate required fields
     if (!resumeData.jobTitle || !resumeData.jobDescription) {
@@ -39,12 +43,11 @@ export async function POST(request: Request) {
       currentFeedback: resumeData.feedback ? JSON.stringify(resumeData.feedback) : undefined,
     });
 
-    console.log('Optimizing resume with Google Gemini 1.5 Pro...');
+    console.log('Optimizing with Google Gemini...');
     
-    // Optimize resume with AI
     const optimizedContent = await optimizeResume(resumeData.resumePath, instructions);
 
-    console.log('Resume optimization complete!');
+    console.log('Optimization complete!');
 
     return NextResponse.json({
       success: true,

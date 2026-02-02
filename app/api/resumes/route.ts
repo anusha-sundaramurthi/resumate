@@ -1,29 +1,14 @@
 import { auth } from '@clerk/nextjs/server';
 import { NextResponse } from 'next/server';
-import { listResumes, getResume } from '@/lib/redis';
+import { listResumes } from '@/lib/mongodb';  // ← Changed from redis
 
-export async function GET(request: Request) {
+export async function GET() {
   try {
-    const { userId } = await auth();
+    const { userId } =  auth();
     if (!userId) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Check if this is a request for a specific resume
-    const url = new URL(request.url);
-    const pathParts = url.pathname.split('/');
-    const resumeId = pathParts[pathParts.length - 1];
-
-    // If there's a resume ID in the path (not "resumes")
-    if (resumeId && resumeId !== 'resumes') {
-      const resume = await getResume(userId, resumeId);
-      if (!resume) {
-        return NextResponse.json({ error: 'Resume not found' }, { status: 404 });
-      }
-      return NextResponse.json(resume);
-    }
-
-    // Otherwise, list all resumes
     const resumes = await listResumes(userId);
 
     return NextResponse.json({
