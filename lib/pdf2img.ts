@@ -289,7 +289,7 @@ async function convertTextToImage(
 async function convertDocxToImage(file: File):
   Promise<PdfConversionResult> {
   try {
-    // @ts-expect-error - mammoth is a library for docx conversion
+    
     const mammoth = await import("mammoth");
 
     const arrayBuffer = await file.arrayBuffer();
